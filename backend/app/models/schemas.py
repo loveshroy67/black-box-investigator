@@ -14,3 +14,13 @@ class IncidentResponse(BaseModel):
     incident_id: str
     status: str
     events: List[EvidenceEvent]
+
+
+class EvidenceResponse(BaseModel):
+    evidence_id: str
+    incident_id: str
+    filename: str
+    file_type: str
+    status: str
+    extracted_text: str = ""
+    events: List[EvidenceEvent] = []
