@@ -12,7 +12,7 @@ const links = [
 function Sidebar({ incidentId }) {
   return (
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">BB</span><span><strong>BLACK BOX</strong><small>INVESTIGATOR</small></span></div>
+      <div className="brand"><img src="/3699540-200.png" alt="Black Box" className="brand-logo" /><span><strong>BLACK BOX</strong><small>INVESTIGATOR</small></span></div>
       <nav className="sidebar-nav" aria-label="Primary navigation">
         {links.map(([to, label, icon]) => <NavLink key={to} to={to} className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}><span className="nav-icon">{icon}</span>{label}</NavLink>)}
       </nav>
