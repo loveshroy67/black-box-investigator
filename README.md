@@ -33,53 +33,78 @@ The investigation engine supports Gemini-based reasoning with a deterministic lo
 
 ## Architecture
 
-```text
-                         ┌──────────────────────┐
-                         │      User / SRE      │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │   React Frontend    │
-                         │                      │
-                         │  Dashboard           │
-                         │  Evidence            │
-                         │  Timeline            │
-                         │  Investigation       │
-                         │  Correlation Graph  │
-                         └──────────┬───────────┘
-                                    │
-                              REST API / HTTP
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │     FastAPI API      │
-                         │                      │
-                         │ /evidence            │
-                         │ /timeline             │
-                         │ /investigate          │
-                         │ /investigation        │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                    ┌──────────────────────────────┐
-                    │    Investigation Services   │
-                    │                              │
-                    │ Parser                       │
-                    │ Timeline                     │
-                    │ Investigation                 │
-                    │ Hypothesis Engine             │
-                    │ Reasoning                     │
-                    └──────────────┬───────────────┘
-                                   │
-                         ┌─────────┴─────────┐
-                         │                   │
-                         ▼                   ▼
-                ┌────────────────┐   ┌─────────────────┐
-                │ Gemini Engine  │   │ Local Fallback  │
-                │ AI reasoning   │   │ Hypothesis      │
-                │                │   │ Engine          │
-                └────────────────┘   └─────────────────┘
+flowchart TD
+    A[User / SRE] --> B[React Frontend]
+
+    B --> C[FastAPI Backend]
+
+    C --> D[Incident API]
+
+    D --> E[Evidence Upload]
+    D --> F[Timeline API]
+    D --> G[Investigation API]
+
+    E --> H[Evidence Parser]
+    H --> I[Structured Events]
+
+    I --> J[Timeline Service]
+
+    G --> K[Investigation Service]
+
+    K --> L{AI Reasoning}
+
+    L -->|Available| M[Gemini]
+    L -->|Unavailable / Quota Exhausted| N[Local Hypothesis Engine]
+
+    M --> O[Hypotheses]
+    N --> O
+
+    O --> P[Evidence Relationships]
+
+    P --> Q[Correlation View]
+    P --> R[Investigation Graph]
+
+    J --> S[Incident Timeline]
+    O --> T[Investigation Dashboard]
+
+    S --> T
+    Q --> T
+    R --> T
+
+### Architecture Layers
+
+**Frontend**
+- React + Vite
+- React Router
+- Investigation dashboard
+- Timeline visualization
+- Evidence upload
+- Hypothesis and correlation views
+
+**API Layer**
+- FastAPI
+- Incident endpoints
+- Evidence processing
+- Timeline retrieval
+- Investigation execution
+
+**Investigation Layer**
+- Evidence parser
+- Timeline service
+- Investigation service
+- Hypothesis generation
+- Evidence relationship mapping
+
+**Reasoning Layer**
+- Gemini AI reasoning
+- Local deterministic fallback
+- Confidence-based hypotheses
+
+**Visualization Layer**
+- Incident timeline
+- Hypothesis cards
+- Evidence correlation
+- Investigation relationship graph
 
 Investigation Workflow
 Incident Evidence
