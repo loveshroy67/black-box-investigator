@@ -33,9 +33,11 @@ The investigation engine supports Gemini-based reasoning with a deterministic lo
 
 ## Architecture
 
+## Architecture
+
+```mermaid
 flowchart TD
     A[User / SRE] --> B[React Frontend]
-
     B --> C[FastAPI Backend]
 
     C --> D[Incident API]
@@ -46,11 +48,9 @@ flowchart TD
 
     E --> H[Evidence Parser]
     H --> I[Structured Events]
-
     I --> J[Timeline Service]
 
     G --> K[Investigation Service]
-
     K --> L{AI Reasoning}
 
     L -->|Available| M[Gemini]
@@ -70,6 +70,7 @@ flowchart TD
     S --> T
     Q --> T
     R --> T
+```
 
 ### Architecture Layers
 
