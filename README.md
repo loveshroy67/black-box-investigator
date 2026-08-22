@@ -1,64 +1,149 @@
 # Black Box Investigator
 
-Black Box Investigator is an evidence-first incident investigation platform. It accepts incident artifacts, extracts structured events, builds a timeline, generates competing hypotheses, and maps evidence to possible causes.
+Black Box Investigator is an AI-powered incident investigation and root-cause analysis platform. It helps incident responders analyze logs and application events, reconstruct an incident timeline, and compare competing hypotheses with supporting, contradicting, and missing evidence.
 
-The application combines Gemini reasoning, OpenRouter as a secondary AI provider, and a deterministic local fallback, so an investigation can still complete when an upstream provider is unavailable or quota-limited.
+The goal is not simply to produce an answer. The platform shows why a hypothesis is plausible and what additional evidence is needed to confirm it.
+
+## Live Demo
+
+- Frontend: https://black-box-investigator.vercel.app
+- Backend API: https://black-box-investigator-api.onrender.com
+- Swagger UI: https://black-box-investigator-api.onrender.com/docs
+- Health check: https://black-box-investigator-api.onrender.com/health
+
+## What It Does
+
+Black Box Investigator follows an evidence-first workflow:
+
+1. Upload incident evidence.
+2. Extract structured events from the evidence.
+3. Build a chronological incident timeline.
+4. Analyze relationships between events.
+5. Generate competing root-cause hypotheses.
+6. Link hypotheses to supporting evidence.
+7. Identify contradicting or missing evidence.
+8. Present the results through an incident-response dashboard.
 
 ## Features
 
-- Upload logs, traces, reports, and other evidence
-- Extract structured incident events
-- Review a chronological event timeline
-- Generate competing investigation hypotheses
-- Display confidence, reasoning, and evidence relationships
-- Compare supporting and contradicting evidence
-- Explore evidence-to-hypothesis correlation
-- View an investigation relationship graph
-- Track incident severity and investigation status
-- Navigate Dashboard, Incidents, Timeline, Evidence, and Investigation pages
-- Handle loading, empty, upload, connection, and API error states
+### Evidence ingestion
 
-## Architecture
+- Upload `.log`, `.txt`, `.csv`, `.json`, and `.md` files
+- Automatic file-type detection
+- Text extraction from uploaded evidence
+- Evidence storage against an incident
+- Processing status and extracted event counts
 
-```mermaid
-flowchart LR
-    User[Analyst] --> Frontend[React + Vite]
-    Frontend --> API[FastAPI]
-    API --> Upload[Evidence upload]
-    Upload --> Extract[Gemini or local event parser]
-    Extract --> Timeline[Stored event timeline]
-    API --> Investigate[Investigation endpoint]
-    Investigate --> Gemini[Gemini reasoning]
-    Investigate --> Router[OpenRouter reasoning]
-    Investigate --> Local[Local fallback engine]
-    Gemini --> Hypotheses[Stored hypotheses]
-    Router --> Hypotheses
-    Local --> Hypotheses
-    Hypotheses --> Views[Dashboard, correlation, graph]
-    Timeline --> Views
+### AI event extraction
+
+- Gemini-powered structured event extraction
+- Local parser fallback for unavailable or quota-limited AI requests
+- Timestamp preservation
+- Event type classification
+- Severity classification
+- Evidence-to-event relationships
+
+Example event:
+
+```json
+{
+  "event_id": "53cde695-81c5-4503-b3a9-5d1353449b3b",
+  "timestamp": "2026-08-21T09:41:02Z",
+  "source": "server.log",
+  "event": "Deployment completed successfully",
+  "type": "deployment",
+  "severity": "info"
+}
 ```
 
-## Investigation Workflow
+### Incident timeline
 
-1. Upload evidence for `INC-001`.
-2. The backend extracts structured events and stores them on the incident.
-3. The frontend refreshes the timeline.
-4. Run the investigation.
-5. The backend tries Gemini once and falls back locally when needed.
-6. Hypotheses are stored and returned with their source.
-7. The frontend reloads the persisted investigation and timeline.
+Events are normalized and sorted chronologically to reconstruct the incident sequence.
 
-The `GET /investigation` endpoint reads stored results. Generation is triggered by `POST /investigate`, not by a read request.
+```text
+Deployment completed
+        |
+Database migration started
+        |
+Database migration completed
+        |
+Database latency increased
+        |
+Database connection timeout
+        |
+API 500 errors
+        |
+Payment service unavailable
+```
 
-## Technology
+### AI-assisted investigation
+
+The investigation engine generates multiple competing hypotheses instead of assuming one root cause. Each hypothesis can contain:
+
+- Confidence score
+- Reasoning
+- Supporting evidence
+- Contradicting evidence
+- Evidence required to confirm the hypothesis
+
+### Correlation and graph views
+
+The dashboard connects timeline events to hypotheses through:
+
+- Evidence-to-hypothesis correlation cards
+- Supporting and contradicting relationship labels
+- Confidence indicators
+- Investigation relationship graph
+
+### Local fallback reasoning
+
+The system remains usable when an AI provider is unavailable or quota-limited. The deterministic fallback engine can identify patterns involving:
+
+- Database failures
+- Deployments
+- Application failures
+- Infrastructure degradation
+- Network problems
+
+## AI Architecture
+
+```mermaid
+flowchart TD
+    UI[React incident dashboard] --> API[FastAPI API]
+    API --> Evidence[Evidence upload]
+    Evidence --> Parser[Gemini event extraction]
+    Parser -->|Failure or quota limit| LocalParser[Local event parser]
+    Parser --> Events[Normalized events]
+    LocalParser --> Events
+    Events --> Timeline[Chronological timeline]
+    API --> Investigate[POST investigate]
+    Investigate --> Gemini[Gemini hypotheses]
+    Gemini -->|Failure or quota limit| OpenRouter[OpenRouter hypotheses]
+    OpenRouter -->|Failure or unavailable| Local[Local hypothesis engine]
+    Gemini --> Results[Validated hypotheses]
+    OpenRouter --> Results
+    Local --> Results
+    Results --> Store[Stored investigation]
+    Store --> Dashboard[Cards, correlation, and graph]
+```
+
+The provider order for hypothesis generation is:
+
+```text
+Gemini -> OpenRouter -> Local fallback
+```
+
+The `GET /investigation` endpoint only reads stored results. It does not start another AI request.
+
+## Technology Stack
 
 ### Frontend
 
 - React
 - Vite
-- React Router
 - JavaScript and JSX
-- Normal CSS
+- CSS
+- React Router
 
 ### Backend
 
@@ -66,14 +151,20 @@ The `GET /investigation` endpoint reads stored results. Generation is triggered 
 - FastAPI
 - Uvicorn
 - Pydantic
-- In-memory incident store
+- Python Multipart
+- Requests
 
-### Reasoning and parsing
+### AI and reasoning
 
 - Google Gemini API
 - OpenRouter API
-- Local event parser fallback
+- Local event parser
 - Local deterministic hypothesis engine
+
+### Deployment
+
+- Vercel for the frontend
+- Render for the backend
 
 ## Project Structure
 
@@ -81,9 +172,13 @@ The `GET /investigation` endpoint reads stored results. Generation is triggered 
 black-box-investigator/
 ├── backend/
 │   ├── app/
-│   │   ├── api/incidents.py
-│   │   ├── core/config.py
-│   │   ├── models/schemas.py
+│   │   ├── agents/
+│   │   ├── api/
+│   │   │   └── incidents.py
+│   │   ├── core/
+│   │   │   └── config.py
+│   │   ├── models/
+│   │   │   └── schemas.py
 │   │   ├── services/
 │   │   │   ├── hypothesis.py
 │   │   │   ├── investigation.py
@@ -94,6 +189,7 @@ black-box-investigator/
 │   │   │   └── timeline.py
 │   │   └── main.py
 │   ├── requirements.txt
+│   └── uploads/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -113,49 +209,33 @@ black-box-investigator/
 │   │   │   ├── Incidents.jsx
 │   │   │   ├── Investigation.jsx
 │   │   │   └── TimelinePage.jsx
-│   │   ├── services/api.js
+│   │   ├── services/
+│   │   │   └── api.js
 │   │   ├── App.jsx
 │   │   ├── index.css
 │   │   └── main.jsx
 │   └── package.json
-├── sample_data/incident_001/server.log
+├── sample_data/
+│   ├── database_migration.log
+│   ├── deployment_failure.log
+│   ├── network_instability.log
+│   ├── payment_service.log
+│   ├── security_incident.log
+│   └── incident_001/server.log
+├── docs/
 └── README.md
 ```
 
-## API
+Environment files are intentionally excluded from the project tree and should not be committed.
 
-The API uses the incident ID `INC-001` in the example commands below.
+## API Endpoints
 
-## Live Deployment
-
-### Backend API
-
-- API: https://black-box-investigator-api.onrender.com
-- Swagger UI: https://black-box-investigator-api.onrender.com/docs
-- Health check: https://black-box-investigator-api.onrender.com/health
-
-### Frontend
-
-Frontend deployment URL: _Add after deploying the React application._
-
-Configure the deployed frontend to use the live backend:
-
-```env
-VITE_API_URL=https://black-box-investigator-api.onrender.com
-```
-
-Restart or rebuild the Vite application after changing this variable.
+All examples use the default incident ID `INC-001`.
 
 ### Health check
 
 ```http
 GET /health
-```
-
-Response:
-
-```json
-{"status": "healthy"}
 ```
 
 ### Upload evidence
@@ -165,7 +245,7 @@ POST /incidents/{incident_id}/evidence
 Content-Type: multipart/form-data
 ```
 
-The upload field is named `file`. The response includes the evidence ID, file type, processing status, extracted text, and extracted events.
+The multipart field is named `file`. The response includes the evidence ID, file type, processing status, extracted text, and extracted events.
 
 ### Get timeline
 
@@ -173,7 +253,7 @@ The upload field is named `file`. The response includes the evidence ID, file ty
 GET /incidents/{incident_id}/timeline
 ```
 
-Returns the stored events sorted chronologically.
+Returns stored events sorted chronologically.
 
 ### Run investigation
 
@@ -181,7 +261,7 @@ Returns the stored events sorted chronologically.
 POST /incidents/{incident_id}/investigate
 ```
 
-This triggers hypothesis generation and stores the results. The response includes:
+Attempts Gemini, then OpenRouter, then the local fallback engine. The response reports which provider succeeded:
 
 ```json
 {
@@ -192,7 +272,7 @@ This triggers hypothesis generation and stores the results. The response include
 }
 ```
 
-The `source` value is `gemini`, `openrouter`, or `local`, depending on which provider generated the results.
+Possible `source` values are `gemini`, `openrouter`, and `local`.
 
 ### Get stored investigation
 
@@ -200,29 +280,32 @@ The `source` value is `gemini`, `openrouter`, or `local`, depending on which pro
 GET /incidents/{incident_id}/investigation
 ```
 
-Returns the stored timeline, hypotheses, and evidence relationships. It does not start a new Gemini request.
+Returns stored timeline, hypotheses, and evidence relationships. This endpoint is read-only and does not invoke an AI provider.
 
-## Configuration
+## Sample Data
 
-Create `frontend/.env`:
+The repository includes sample logs for different incident scenarios:
 
-```env
-VITE_API_URL=http://127.0.0.1:8000
+- `database_migration.log`: migration, latency, timeout, API failures, and payment failure
+- `deployment_failure.log`: deployment, application latency, timeout, failure, and rollback
+- `network_instability.log`: network latency, packet loss, database timeout, and recovery
+- `payment_service.log`: payment latency, API timeout, HTTP 500, outage, and recovery
+- `security_incident.log`: failed authentication, suspicious login activity, rate limiting, and blocking
+- `incident_001/server.log`: the default end-to-end sample incident
+
+To test the default incident, upload:
+
+```text
+sample_data/incident_001/server.log
 ```
 
-Create `backend/.env` with your Gemini credential:
+The default log produces 9 structured events with the local parser.
 
-```env
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-Keep credentials out of source control. Restart Vite after changing frontend environment variables.
-
-## Run Locally
+## Running Locally
 
 ### Backend
 
-From the repository root, open a terminal:
+From the repository root:
 
 ```powershell
 cd backend
@@ -236,7 +319,14 @@ Backend URLs:
 
 - API: http://127.0.0.1:8000
 - Swagger UI: http://127.0.0.1:8000/docs
-- Health: http://127.0.0.1:8000/health
+- Health check: http://127.0.0.1:8000/health
+
+Create `backend/.env` locally:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
 
 ### Frontend
 
@@ -248,39 +338,74 @@ npm install
 npm.cmd run dev
 ```
 
-Vite normally serves the app at http://localhost:5173. If that port is occupied, use the URL printed in the terminal.
+Create `frontend/.env` locally:
 
-## Try the Sample Incident
+```env
+VITE_API_URL=http://127.0.0.1:8000
+```
 
-1. Start both services.
+Vite normally serves the frontend at http://localhost:5173. If that port is occupied, use the URL printed in the terminal.
+
+Restart Vite after changing environment variables.
+
+## Try the Application
+
+1. Start the backend and frontend.
 2. Open the frontend URL.
 3. Open the Evidence page.
 4. Upload `sample_data/incident_001/server.log`.
-5. Confirm the timeline contains 9 extracted events.
-6. Open Investigation or click Investigate incident.
-7. Confirm H1, H2, and H3 appear.
-8. If Gemini quota is exhausted, confirm the UI reports `Local fallback`.
-9. Open the correlation and investigation graph sections on the dashboard.
+5. Confirm the timeline shows 9 events.
+6. Open Investigation or click **Investigate incident**.
+7. Confirm H1, H2, and H3 are displayed.
+8. If Gemini quota is exhausted, confirm the UI reports **Local fallback**.
+9. Review the evidence correlation and investigation graph on the dashboard.
 
-The sample log describes deployment activity, database migration and latency, connection timeout, API failures, payment unavailability, and service recovery.
+## Deployment
 
-## Gemini Fallback
+### Backend on Render
 
-The backend attempts Gemini reasoning during `POST /investigate`. If Gemini fails because of quota, availability, or another request error, it tries OpenRouter. If both providers fail, the local hypothesis engine generates deterministic results instead.
+Service URL:
 
-The frontend treats provider fallback as a successful investigation and displays the reported source: `Gemini`, `OpenRouter`, or `Local fallback`.
+```text
+https://black-box-investigator-api.onrender.com
+```
 
-Typical local hypotheses include:
+Start command:
 
-- **H1:** Database performance or migration issue
-- **H2:** Application defect introduced during deployment
-- **H3:** Independent infrastructure degradation
+```text
+python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
 
-These are competing explanations, not an automatic declaration of root cause.
+Required Render environment variables:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
+
+### Frontend on Vercel
+
+Service URL:
+
+```text
+https://black-box-investigator.vercel.app
+```
+
+Vercel environment variable:
+
+```env
+VITE_API_URL=https://black-box-investigator-api.onrender.com
+```
+
+Vite embeds environment variables at build time, so redeploy after changing this value.
+
+## CORS
+
+The backend allows local development origins and the deployed Vercel frontend origin. Keep the deployed frontend URL synchronized with the backend CORS configuration.
 
 ## Development Checks
 
-Run the frontend checks from `frontend/`:
+Run from `frontend/`:
 
 ```powershell
 npm.cmd run lint
@@ -292,9 +417,27 @@ npm.cmd run build
 - Incident data is stored in memory and resets when the backend restarts.
 - The current UI focuses on the default incident `INC-001`.
 - Authentication and authorization are not implemented.
-- Evidence files are stored locally in `backend/uploads/`.
-- The Gemini API requires a configured key and available quota.
+- Uploaded evidence is stored locally in `backend/uploads/`.
+- AI providers require configured credentials and available quota.
+
+## Future Improvements
+
+- PostgreSQL persistence
+- Multiple incident case management
+- PDF, image, and screenshot evidence extraction
+- Git commit and deployment correlation
+- Network and infrastructure telemetry integrations
+- Advanced interactive graph visualization
+- Human-in-the-loop investigation workflow
+- Authentication and role-based access control
+- Investigation history and collaboration
+
+## Author
+
+Lovesh Roy  
+B.Tech Computer Science & Engineering  
+Lovely Professional University
 
 ## License
 
-This project is intended for educational, portfolio, and engineering demonstration purposes.
+This project is intended for educational, experimental, and portfolio purposes.

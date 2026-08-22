@@ -1,0 +1,6 @@
+2026-08-21 13:05:00 INFO Payment service operating normally
+2026-08-21 13:06:12 WARN Payment request latency increased
+2026-08-21 13:06:35 ERROR Payment API request timeout
+2026-08-21 13:07:01 ERROR Payment service unavailable
+2026-08-21 13:07:19 ERROR API returned HTTP 500
+2026-08-21 13:08:04 INFO Payment service recovered
