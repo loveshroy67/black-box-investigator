@@ -1,9 +1,11 @@
 import json
 
+import requests
+
 from google import genai
 from google.genai import types
 
-from app.core.config import GEMINI_API_KEY
+from app.core.config import GEMINI_API_KEY, OPENROUTER_API_KEY
 
 
 # ============================================================
@@ -391,6 +393,104 @@ INCIDENT EVENTS:
 
 
 # ============================================================
+# OPENROUTER HYPOTHESIS GENERATION
+# ============================================================
+
+def generate_openrouter_hypotheses(
+    events: list[dict]
+) -> dict:
+
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError(
+            "OPENROUTER_API_KEY is not configured"
+        )
+
+    evidence = [
+        {
+            "event_id": event.get("event_id"),
+            "timestamp": event.get("timestamp"),
+            "source": event.get("source"),
+            "event": event.get("event"),
+            "type": event.get("type"),
+            "severity": event.get("severity")
+        }
+        for event in events
+    ]
+
+    prompt = f"""
+You are the hypothesis engine of an AI incident investigator.
+
+Analyze the incident events and generate 2-4 competing hypotheses.
+
+Rules:
+- Use ONLY the provided events.
+- Do not invent evidence.
+- Every evidence reference must be an event_id.
+- Confidence must be between 0 and 1.
+- Do not claim a definitive root cause.
+- Return ONLY valid JSON.
+
+Format:
+{{
+  "hypotheses": [
+    {{
+      "id": "H1",
+      "title": "Short title",
+      "description": "Explanation",
+      "confidence": 0.65,
+      "reasoning": "Reasoning",
+      "supporting_evidence": [],
+      "contradicting_evidence": [],
+      "insufficient_evidence_notes": "Missing evidence"
+    }}
+  ]
+}}
+
+INCIDENT EVENTS:
+
+{json.dumps(evidence, indent=2)}
+"""
+
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "openrouter/free",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "response_format": {
+                "type": "json_object"
+            }
+        },
+        timeout=60
+    )
+
+    response.raise_for_status()
+    data = response.json()
+
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as error:
+        raise RuntimeError(
+            "OpenRouter returned an invalid response"
+        ) from error
+
+    if not content:
+        raise RuntimeError(
+            "OpenRouter returned an empty response"
+        )
+
+    return json.loads(content)
+
+
+# ============================================================
 # VALIDATE GEMINI RESULT
 # ============================================================
 
@@ -653,6 +753,47 @@ def generate_hypotheses(
             print(
                 "Gemini unavailable."
             )
+
+    # ========================================================
+    # OPENROUTER FALLBACK
+    # ========================================================
+
+    try:
+
+        print(
+            "Attempting OpenRouter hypothesis generation..."
+        )
+
+        result = generate_openrouter_hypotheses(
+            events
+        )
+
+        result = validate_hypotheses(
+            result,
+            events
+        )
+
+        if result["hypotheses"]:
+
+            print(
+                "OpenRouter hypothesis generation successful."
+            )
+
+            return {
+                "source": "openrouter",
+                "hypotheses": result["hypotheses"]
+            }
+
+        print(
+            "OpenRouter returned no valid hypotheses."
+        )
+
+    except Exception as error:
+
+        print(
+            f"OpenRouter hypothesis generation failed: "
+            f"{error}"
+        )
 
     # ========================================================
     # LOCAL FALLBACK

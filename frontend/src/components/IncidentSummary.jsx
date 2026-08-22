@@ -21,7 +21,7 @@ function IncidentSummary({ incidentId, status, onInvestigate, loading, source })
         <dl className="summary-details">
           <div><dt>Severity</dt><dd className="severity-high">High</dd></div>
           <div><dt>Status</dt><dd>{isComplete ? "Complete" : "Investigating"}</dd></div>
-          <div><dt>AI engine</dt><dd>{source === "gemini" ? "Gemini" : source === "local" ? "Local fallback" : source === "stored" ? "Stored result" : "Not run"}</dd></div>
+          <div><dt>AI engine</dt><dd>{source === "gemini" ? "Gemini" : source === "openrouter" ? "OpenRouter" : source === "local" ? "Local fallback" : source === "stored" ? "Stored result" : "Not run"}</dd></div>
           <div><dt>Scope</dt><dd>Payment service</dd></div>
         </dl>
       </div>

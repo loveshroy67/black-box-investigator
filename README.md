@@ -2,7 +2,7 @@
 
 Black Box Investigator is an evidence-first incident investigation platform. It accepts incident artifacts, extracts structured events, builds a timeline, generates competing hypotheses, and maps evidence to possible causes.
 
-The application combines Gemini reasoning with a deterministic local fallback, so an investigation can still complete when Gemini is unavailable or quota-limited.
+The application combines Gemini reasoning, OpenRouter as a secondary AI provider, and a deterministic local fallback, so an investigation can still complete when an upstream provider is unavailable or quota-limited.
 
 ## Features
 
@@ -29,8 +29,10 @@ flowchart LR
     Extract --> Timeline[Stored event timeline]
     API --> Investigate[Investigation endpoint]
     Investigate --> Gemini[Gemini reasoning]
+    Investigate --> Router[OpenRouter reasoning]
     Investigate --> Local[Local fallback engine]
     Gemini --> Hypotheses[Stored hypotheses]
+    Router --> Hypotheses
     Local --> Hypotheses
     Hypotheses --> Views[Dashboard, correlation, graph]
     Timeline --> Views
@@ -69,6 +71,7 @@ The `GET /investigation` endpoint reads stored results. Generation is triggered 
 ### Reasoning and parsing
 
 - Google Gemini API
+- OpenRouter API
 - Local event parser fallback
 - Local deterministic hypothesis engine
 
@@ -189,7 +192,7 @@ This triggers hypothesis generation and stores the results. The response include
 }
 ```
 
-The `source` value is `gemini` when Gemini generated the results and `local` when the fallback engine was used.
+The `source` value is `gemini`, `openrouter`, or `local`, depending on which provider generated the results.
 
 ### Get stored investigation
 
@@ -263,9 +266,9 @@ The sample log describes deployment activity, database migration and latency, co
 
 ## Gemini Fallback
 
-The backend attempts Gemini reasoning during `POST /investigate`. If Gemini fails because of quota, availability, or another request error, the local hypothesis engine generates deterministic results instead.
+The backend attempts Gemini reasoning during `POST /investigate`. If Gemini fails because of quota, availability, or another request error, it tries OpenRouter. If both providers fail, the local hypothesis engine generates deterministic results instead.
 
-The frontend treats this as a successful investigation. It displays `Local fallback` rather than claiming Gemini was used.
+The frontend treats provider fallback as a successful investigation and displays the reported source: `Gemini`, `OpenRouter`, or `Local fallback`.
 
 Typical local hypotheses include:
 
