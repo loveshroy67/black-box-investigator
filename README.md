@@ -123,6 +123,26 @@ black-box-investigator/
 
 The API uses the incident ID `INC-001` in the example commands below.
 
+## Live Deployment
+
+### Backend API
+
+- API: https://black-box-investigator-api.onrender.com
+- Swagger UI: https://black-box-investigator-api.onrender.com/docs
+- Health check: https://black-box-investigator-api.onrender.com/health
+
+### Frontend
+
+Frontend deployment URL: _Add after deploying the React application._
+
+Configure the deployed frontend to use the live backend:
+
+```env
+VITE_API_URL=https://black-box-investigator-api.onrender.com
+```
+
+Restart or rebuild the Vite application after changing this variable.
+
 ### Health check
 
 ```http

@@ -1,6 +1,12 @@
 function InvestigationGraph({ events = [], hypotheses = [] }) {
+  const relationshipLimit = 5;
+  const limitedHypotheses = hypotheses.map((hypothesis) => ({
+    ...hypothesis,
+    supporting_evidence: (hypothesis.supporting_evidence || []).slice(0, relationshipLimit),
+    contradicting_evidence: (hypothesis.contradicting_evidence || []).slice(0, relationshipLimit),
+  }));
   const connectedIds = new Set(
-    hypotheses.flatMap((hypothesis) => [
+    limitedHypotheses.flatMap((hypothesis) => [
       ...(hypothesis.supporting_evidence || []),
       ...(hypothesis.contradicting_evidence || []),
     ])
@@ -33,11 +39,11 @@ function InvestigationGraph({ events = [], hypotheses = [] }) {
         </div>
         <div className="graph-connections" aria-hidden="true">
           {graphEvents.map((event) => {
-            const relationships = hypotheses.flatMap((hypothesis) => [
+            const relationships = limitedHypotheses.flatMap((hypothesis) => [
               ...(hypothesis.supporting_evidence || []).includes(event.event_id) ? [{ type: "supporting", id: hypothesis.id }] : [],
               ...(hypothesis.contradicting_evidence || []).includes(event.event_id) ? [{ type: "contradicting", id: hypothesis.id }] : [],
             ]);
-            return <div className="connection-row" key={event.event_id}>{relationships.map((relationship) => <div className={`connection-line ${relationship.type === "supporting" ? "supporting-line" : "contradicting-line"}`} key={`${event.event_id}-${relationship.id}-${relationship.type}`}><span /></div>)}</div>;
+            return <div className="connection-row" key={event.event_id}>{relationships.map((relationship) => <div className={`connection-line ${relationship.type === "supporting" ? "supporting-line" : "contradicting-line"}`} key={`${event.event_id}-${relationship.id}-${relationship.type}`}><span className="connection-arrow" /><small>{relationship.type === "supporting" ? "supports" : "contradicts"} {relationship.id}</small></div>)}</div>;
           })}
         </div>
         <div className="graph-column">

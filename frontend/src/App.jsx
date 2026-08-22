@@ -21,6 +21,30 @@ const pageTitles = {
   "/investigation": "Investigation",
 };
 
+const deduplicateEvents = (data) => {
+  if (!data?.events) return data;
+
+  const seen = new Set();
+  const events = data.events.filter((event) => {
+    const signature = [
+      event.timestamp,
+      event.type,
+      event.severity,
+      event.event,
+      event.title,
+      event.message,
+      event.description,
+      event.source,
+    ].join("|");
+
+    if (seen.has(signature)) return false;
+    seen.add(signature);
+    return true;
+  });
+
+  return { ...data, events, total_events: events.length };
+};
+
 function Workspace() {
   const location = useLocation();
   const [timeline, setTimeline] = useState(null);
@@ -34,7 +58,7 @@ function Workspace() {
   const refreshTimeline = async () => {
     setRefreshing(true);
     try {
-      setTimeline(await getTimeline(INCIDENT_ID));
+      setTimeline(deduplicateEvents(await getTimeline(INCIDENT_ID)));
       setError("");
     } catch (refreshError) {
       setError(refreshError instanceof Error ? refreshError.message : "Unable to load timeline");
@@ -55,7 +79,7 @@ function Workspace() {
       if (!active) return;
 
       if (timelineResult.status === "fulfilled") {
-        setTimeline(timelineResult.value);
+        setTimeline(deduplicateEvents(timelineResult.value));
       } else {
         setError("Unable to load incident timeline");
       }
