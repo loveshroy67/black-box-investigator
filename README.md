@@ -91,7 +91,6 @@ black-box-investigator/
 │   │   │   └── timeline.py
 │   │   └── main.py
 │   ├── requirements.txt
-│   └── .env
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -115,7 +114,6 @@ black-box-investigator/
 │   │   ├── App.jsx
 │   │   ├── index.css
 │   │   └── main.jsx
-│   ├── .env
 │   └── package.json
 ├── sample_data/incident_001/server.log
 └── README.md
