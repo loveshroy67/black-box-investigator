@@ -30,7 +30,13 @@ def extract_text(file_path: str, file_type: str) -> str:
         return ""
 
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
+        with open(
+            file_path,
+            "r",
+            encoding="utf-8",
+            errors="ignore"
+        ) as file:
             return file.read()
+
     except Exception:
         return ""
