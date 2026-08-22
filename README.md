@@ -571,18 +571,3 @@ This project is intended for educational, portfolio, and engineering demonstrati
 
 
 
-### Important before committing
-
-
-Because GitHub **already rejected your push for a repository rule violation**, don't run `git add .` and push yet if your Gemini/API key may be somewhere in the repository.
-
-
-First run:
-
-
-```powershell
-git status
-
-and:
-
-git ls-files | Select-String "\.env"
