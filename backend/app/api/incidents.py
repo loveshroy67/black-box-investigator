@@ -14,7 +14,7 @@ from app.services.hypothesis import generate_hypotheses
 from app.services.local_hypothesis import generate_local_hypotheses
 
 from app.services.parser import detect_file_type, extract_text
-from app.services.reasoning import extract_events
+from app.services.reasoning import extract_events, local_extract_events
 
 from app.services.store import (
     add_evidence,
@@ -152,12 +152,45 @@ async def upload_evidence(
 
             traceback.print_exc()
 
-            raise HTTPException(
-                status_code=500,
-                detail=(
-                    f"AI extraction failed: "
-                    f"{str(error)}"
+            print(
+                "Using final local event parser fallback."
+            )
+
+            fallback_result = local_extract_events(
+                extracted_text,
+                filename
+            )
+
+            for event in fallback_result.get(
+                "events",
+                []
+            ):
+
+                events.append(
+                    {
+                        "event_id": str(uuid.uuid4()),
+                        "timestamp": event.get(
+                            "timestamp"
+                        ),
+                        "source": filename,
+                        "event": event.get(
+                            "event",
+                            ""
+                        ),
+                        "evidence_id": evidence_id,
+                        "type": event.get(
+                            "type",
+                            "other"
+                        ),
+                        "severity": event.get(
+                            "severity",
+                            "info"
+                        )
+                    }
                 )
+
+            print(
+                f"Fallback extracted {len(events)} events."
             )
 
     # --------------------------------------------------------
