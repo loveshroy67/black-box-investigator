@@ -1,573 +1,279 @@
 # Black Box Investigator
 
-AI-powered incident investigation platform for analyzing incident evidence, extracting event timelines, generating competing hypotheses, and correlating evidence with possible root causes.
+Black Box Investigator is an evidence-first incident investigation platform. It accepts incident artifacts, extracts structured events, builds a timeline, generates competing hypotheses, and maps evidence to possible causes.
 
-## Overview
+The application combines Gemini reasoning with a deterministic local fallback, so an investigation can still complete when Gemini is unavailable or quota-limited.
 
-Black Box Investigator is a full-stack incident investigation system designed to help engineers understand what happened during a production incident.
+## Features
 
-The system accepts incident evidence such as logs and reports, extracts structured events, builds a chronological timeline, generates competing hypotheses, and maps supporting and contradicting evidence to each hypothesis.
-
-The investigation engine supports Gemini-based reasoning with a deterministic local fallback when the AI service is unavailable or quota-limited.
-
----
-
-## Key Features
-
-- Incident evidence upload
-- Automatic event extraction
-- Chronological incident timeline
-- AI-assisted hypothesis generation
-- Local hypothesis fallback engine
-- Supporting vs contradicting evidence
-- Hypothesis confidence scoring
-- Evidence → hypothesis correlation
-- Investigation relationship graph
-- Incident severity and status indicators
-- Investigation dashboard
-- Loading, error, and empty states
-- REST API backend
-- React frontend
-
----
-
-## Architecture
+- Upload logs, traces, reports, and other evidence
+- Extract structured incident events
+- Review a chronological event timeline
+- Generate competing investigation hypotheses
+- Display confidence, reasoning, and evidence relationships
+- Compare supporting and contradicting evidence
+- Explore evidence-to-hypothesis correlation
+- View an investigation relationship graph
+- Track incident severity and investigation status
+- Navigate Dashboard, Incidents, Timeline, Evidence, and Investigation pages
+- Handle loading, empty, upload, connection, and API error states
 
 ## Architecture
 
 ```mermaid
-flowchart TD
-    A[User / SRE] --> B[React Frontend]
-    B --> C[FastAPI Backend]
-
-    C --> D[Incident API]
-
-    D --> E[Evidence Upload]
-    D --> F[Timeline API]
-    D --> G[Investigation API]
-
-    E --> H[Evidence Parser]
-    H --> I[Structured Events]
-    I --> J[Timeline Service]
-
-    G --> K[Investigation Service]
-    K --> L{AI Reasoning}
-
-    L -->|Available| M[Gemini]
-    L -->|Unavailable / Quota Exhausted| N[Local Hypothesis Engine]
-
-    M --> O[Hypotheses]
-    N --> O
-
-    O --> P[Evidence Relationships]
-
-    P --> Q[Correlation View]
-    P --> R[Investigation Graph]
-
-    J --> S[Incident Timeline]
-    O --> T[Investigation Dashboard]
-
-    S --> T
-    Q --> T
-    R --> T
+flowchart LR
+    User[Analyst] --> Frontend[React + Vite]
+    Frontend --> API[FastAPI]
+    API --> Upload[Evidence upload]
+    Upload --> Extract[Gemini or local event parser]
+    Extract --> Timeline[Stored event timeline]
+    API --> Investigate[Investigation endpoint]
+    Investigate --> Gemini[Gemini reasoning]
+    Investigate --> Local[Local fallback engine]
+    Gemini --> Hypotheses[Stored hypotheses]
+    Local --> Hypotheses
+    Hypotheses --> Views[Dashboard, correlation, graph]
+    Timeline --> Views
 ```
 
-### Architecture Layers
+## Investigation Workflow
 
-**Frontend**
-- React + Vite
+1. Upload evidence for `INC-001`.
+2. The backend extracts structured events and stores them on the incident.
+3. The frontend refreshes the timeline.
+4. Run the investigation.
+5. The backend tries Gemini once and falls back locally when needed.
+6. Hypotheses are stored and returned with their source.
+7. The frontend reloads the persisted investigation and timeline.
+
+The `GET /investigation` endpoint reads stored results. Generation is triggered by `POST /investigate`, not by a read request.
+
+## Technology
+
+### Frontend
+
+- React
+- Vite
 - React Router
-- Investigation dashboard
-- Timeline visualization
-- Evidence upload
-- Hypothesis and correlation views
+- JavaScript and JSX
+- Normal CSS
 
-**API Layer**
+### Backend
+
+- Python
 - FastAPI
-- Incident endpoints
-- Evidence processing
-- Timeline retrieval
-- Investigation execution
+- Uvicorn
+- Pydantic
+- In-memory incident store
 
-**Investigation Layer**
-- Evidence parser
-- Timeline service
-- Investigation service
-- Hypothesis generation
-- Evidence relationship mapping
+### Reasoning and parsing
 
-**Reasoning Layer**
-- Gemini AI reasoning
-- Local deterministic fallback
-- Confidence-based hypotheses
+- Google Gemini API
+- Local event parser fallback
+- Local deterministic hypothesis engine
 
-**Visualization Layer**
-- Incident timeline
-- Hypothesis cards
-- Evidence correlation
-- Investigation relationship graph
+## Project Structure
 
-Investigation Workflow
-Incident Evidence
-       │
-       ▼
-Evidence Upload
-       │
-       ▼
-Event Extraction
-       │
-       ▼
-Structured Timeline
-       │
-       ▼
-Hypothesis Generation
-       │
-       ├───────────────┐
-       │               │
-       ▼               ▼
-Gemini AI        Local Fallback
-       │               │
-       └───────┬───────┘
-               ▼
-       Investigation Results
-               │
-               ▼
-      Evidence Correlation
-               │
-               ▼
-       Root Cause Analysis
-Tech Stack
-Frontend
-React
-Vite
-React Router
-JavaScript / JSX
-CSS
-Backend
-Python
-FastAPI
-Uvicorn
-Pydantic
-AI / Reasoning
-Google Gemini
-Local deterministic hypothesis engine
-Evidence-based hypothesis scoring
-API Communication
-REST
-JSON
-Multipart file upload
-Project Structure
+```text
 black-box-investigator/
-│
 ├── backend/
-│   └── app/
-│       ├── agents/
-│       ├── api/
-│       │   └── incidents.py
-│       ├── core/
-│       │   └── config.py
-│       ├── models/
-│       │   └── schemas.py
-│       ├── services/
-│       │   ├── hypothesis.py
-│       │   ├── investigation.py
-│       │   ├── local_hypothesis.py
-│       │   ├── parser.py
-│       │   ├── reasoning.py
-│       │   ├── store.py
-│       │   └── timeline.py
-│       └── main.py
-│
+│   ├── app/
+│   │   ├── api/incidents.py
+│   │   ├── core/config.py
+│   │   ├── models/schemas.py
+│   │   ├── services/
+│   │   │   ├── hypothesis.py
+│   │   │   ├── investigation.py
+│   │   │   ├── local_hypothesis.py
+│   │   │   ├── parser.py
+│   │   │   ├── reasoning.py
+│   │   │   ├── store.py
+│   │   │   └── timeline.py
+│   │   └── main.py
+│   ├── requirements.txt
+│   └── .env
 ├── frontend/
-│   └── src/
-│       ├── components/
-│       ├── pages/
-│       ├── services/
-│       │   └── api.js
-│       ├── App.jsx
-│       ├── index.css
-│       └── main.jsx
-│
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── BackendStatus.jsx
+│   │   │   ├── CorrelationView.jsx
+│   │   │   ├── EvidenceUpload.jsx
+│   │   │   ├── HypothesisCard.jsx
+│   │   │   ├── IncidentSummary.jsx
+│   │   │   ├── InvestigationGraph.jsx
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── Timeline.jsx
+│   │   │   ├── TimelineEvent.jsx
+│   │   │   └── Topbar.jsx
+│   │   ├── pages/
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Evidence.jsx
+│   │   │   ├── Incidents.jsx
+│   │   │   ├── Investigation.jsx
+│   │   │   └── TimelinePage.jsx
+│   │   ├── services/api.js
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── .env
+│   └── package.json
+├── sample_data/incident_001/server.log
 └── README.md
-Backend Services
-Parser
+```
 
-parser.py
+## API
 
-Responsible for extracting structured incident events from uploaded evidence.
+The API uses the incident ID `INC-001` in the example commands below.
 
-The system can fall back to local parsing when Gemini event extraction is unavailable.
+### Health check
 
-Timeline
-
-timeline.py
-
-Builds and serves the chronological event sequence associated with an incident.
-
-Hypothesis Engine
-
-hypothesis.py
-
-Handles hypothesis generation and investigation reasoning.
-
-Local Hypothesis Engine
-
-local_hypothesis.py
-
-Provides deterministic fallback hypotheses when Gemini is unavailable or quota is exhausted.
-
-The local engine currently considers categories such as:
-
-Database issues
-Deployment issues
-Infrastructure degradation
-Investigation
-
-investigation.py
-
-Combines extracted events and hypotheses into an investigation result.
-
-Relationships are represented as:
-
-{
-  "hypothesis_id": "H1",
-  "event_id": "E001",
-  "relationship": "supports"
-}
-
-or:
-
-{
-  "hypothesis_id": "H1",
-  "event_id": "E002",
-  "relationship": "contradicts"
-}
-Store
-
-store.py
-
-Provides the application's incident/evidence data storage layer.
-
-Reasoning
-
-reasoning.py
-
-Contains reasoning-related investigation functionality.
-
-Frontend
-
-The frontend is organized around an incident investigation workspace.
-
-Dashboard
-
-Provides:
-
-Incident summary
-Evidence statistics
-Event statistics
-Hypothesis statistics
-Investigation status
-Incident timeline
-Investigation results
-Evidence → hypothesis correlation
-Investigation relationship graph
-Evidence
-
-Provides:
-
-Evidence upload
-Processing status
-Latest artifact information
-Extracted event count
-Timeline
-
-Displays extracted events chronologically.
-
-Each event can expose:
-
-Timestamp
-Event type
-Severity
-Description
-Source
-Event ID
-Investigation
-
-Displays generated hypotheses and their reasoning.
-
-Each hypothesis includes:
-
-Hypothesis ID
-Title
-Description
-Confidence
-Supporting evidence
-Contradicting evidence
-Reasoning
-Insufficient evidence notes
-API
-
-The backend exposes incident investigation endpoints under:
-
-/incidents/{incident_id}
-Upload Evidence
-POST /incidents/{incident_id}/evidence
-
-Uploads an incident evidence file for processing.
-
-Example:
-
-POST /incidents/INC-001/evidence
-
-The backend extracts structured events from the uploaded evidence.
-
-Get Timeline
-GET /incidents/{incident_id}/timeline
-
-Returns the extracted incident timeline.
-
-Example:
-
-GET /incidents/INC-001/timeline
-Investigate Incident
-POST /incidents/{incident_id}/investigate
-
-Starts the investigation process.
-
-Example:
-
-POST /incidents/INC-001/investigate
-
-The system attempts AI-assisted hypothesis generation and can fall back to the local hypothesis engine.
-
-Get Investigation
-GET /incidents/{incident_id}/investigation
-
-Returns the generated investigation.
-
-Example:
-
-GET /incidents/INC-001/investigation
-Health Check
+```http
 GET /health
+```
 
-Returns:
+Response:
 
+```json
+{"status": "healthy"}
+```
+
+### Upload evidence
+
+```http
+POST /incidents/{incident_id}/evidence
+Content-Type: multipart/form-data
+```
+
+The upload field is named `file`. The response includes the evidence ID, file type, processing status, extracted text, and extracted events.
+
+### Get timeline
+
+```http
+GET /incidents/{incident_id}/timeline
+```
+
+Returns the stored events sorted chronologically.
+
+### Run investigation
+
+```http
+POST /incidents/{incident_id}/investigate
+```
+
+This triggers hypothesis generation and stores the results. The response includes:
+
+```json
 {
-  "status": "healthy"
+  "incident_id": "INC-001",
+  "status": "investigation_complete",
+  "source": "local",
+  "hypotheses": []
 }
-Gemini → Local Fallback
+```
 
-The investigation system is designed to remain usable when Gemini is unavailable.
+The `source` value is `gemini` when Gemini generated the results and `local` when the fallback engine was used.
 
-The reasoning flow is:
+### Get stored investigation
 
-Attempt Gemini
-     │
-     ├── Success ──→ Use Gemini results
-     │
-     └── Failure
-           │
-           ▼
-     Local hypothesis engine
-           │
-           ▼
-     Generate deterministic hypotheses
+```http
+GET /incidents/{incident_id}/investigation
+```
 
-This allows the application to continue generating investigation results even when:
+Returns the stored timeline, hypotheses, and evidence relationships. It does not start a new Gemini request.
 
-Gemini quota is exhausted
-Gemini requests fail
-The AI service is temporarily unavailable
+## Configuration
 
-For example, when Gemini returns a 429 RESOURCE_EXHAUSTED response, the backend switches to the local hypothesis engine.
+Create `frontend/.env`:
 
-Local Hypothesis Engine
-
-The current local investigation engine can generate hypotheses based on detected event categories.
-
-Example hypotheses include:
-
-H1 — Database Performance or Migration Issue
-
-Considers database-related events as supporting evidence.
-
-H2 — Application Defect Introduced During Deployment
-
-Considers deployment-related events as supporting evidence.
-
-H3 — Independent Infrastructure Degradation
-
-Considers infrastructure, database, and application events as potential supporting evidence.
-
-Each hypothesis contains a confidence score and evidence relationships.
-
-Running Locally
-Backend
-
-Navigate to:
-
-cd backend
-
-Create and activate a virtual environment:
-
-python -m venv .venv
-
-Windows PowerShell:
-
-.\.venv\Scripts\Activate.ps1
-
-Install dependencies:
-
-pip install -r requirements.txt
-
-Start FastAPI:
-
-python -m uvicorn app.main:app --reload
-
-The backend will be available at:
-
-http://127.0.0.1:8000
-
-FastAPI documentation:
-
-http://127.0.0.1:8000/docs
-Frontend
-
-Open another terminal:
-
-cd frontend
-
-Install dependencies:
-
-npm install
-
-Start the development server:
-
-npm run dev
-
-The Vite development server will display the local frontend URL in the terminal.
-
-Environment Variables
-
-The frontend can use:
-
+```env
 VITE_API_URL=http://127.0.0.1:8000
+```
 
-The frontend accesses the API through:
+Create `backend/.env` with your Gemini credential:
 
-const API_URL = import.meta.env.VITE_API_URL;
+```env
+GEMINI_API_KEY=your_gemini_api_key
+```
 
-Backend AI credentials should be stored in environment variables and should never be committed to Git.
+Keep credentials out of source control. Restart Vite after changing frontend environment variables.
 
-Example Investigation
+## Run Locally
 
-An incident may contain events such as:
+### Backend
 
-Deployment
-     │
-     ▼
-Database activity
-     │
-     ▼
-Connection timeout
-     │
-     ▼
-Application failures
+From the repository root, open a terminal:
 
-The investigation engine evaluates competing explanations.
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
 
-Example:
+Backend URLs:
 
-H1 — Database Performance Issue
-Confidence: 65%
+- API: http://127.0.0.1:8000
+- Swagger UI: http://127.0.0.1:8000/docs
+- Health: http://127.0.0.1:8000/health
 
+### Frontend
 
-Supporting:
-- Database event
-- Connection timeout
+Open a second terminal:
 
+```powershell
+cd frontend
+npm install
+npm.cmd run dev
+```
 
-Contradicting:
-- Infrastructure event
-H2 — Deployment Issue
-Confidence: 40%
+Vite normally serves the app at http://localhost:5173. If that port is occupied, use the URL printed in the terminal.
 
+## Try the Sample Incident
 
-Supporting:
-- Deployment event
+1. Start both services.
+2. Open the frontend URL.
+3. Open the Evidence page.
+4. Upload `sample_data/incident_001/server.log`.
+5. Confirm the timeline contains 9 extracted events.
+6. Open Investigation or click Investigate incident.
+7. Confirm H1, H2, and H3 appear.
+8. If Gemini quota is exhausted, confirm the UI reports `Local fallback`.
+9. Open the correlation and investigation graph sections on the dashboard.
 
+The sample log describes deployment activity, database migration and latency, connection timeout, API failures, payment unavailability, and service recovery.
 
-Contradicting:
-- Database event
-H3 — Infrastructure Degradation
-Confidence: 25%
+## Gemini Fallback
 
+The backend attempts Gemini reasoning during `POST /investigate`. If Gemini fails because of quota, availability, or another request error, the local hypothesis engine generates deterministic results instead.
 
-Supporting:
-- Infrastructure event
-- Database event
-- Application event
+The frontend treats this as a successful investigation. It displays `Local fallback` rather than claiming Gemini was used.
 
-The purpose is not to automatically declare a root cause, but to provide an evidence-backed set of competing explanations for further investigation.
+Typical local hypotheses include:
 
-Design Philosophy
+- **H1:** Database performance or migration issue
+- **H2:** Application defect introduced during deployment
+- **H3:** Independent infrastructure degradation
 
-Black Box Investigator follows an evidence-first approach.
+These are competing explanations, not an automatic declaration of root cause.
 
-Instead of presenting a single unexplained AI conclusion, the system exposes:
+## Development Checks
 
-Evidence
-   ↓
-Events
-   ↓
-Timeline
-   ↓
-Hypotheses
-   ↓
-Supporting / Contradicting Evidence
-   ↓
-Confidence
-   ↓
-Investigator Review
+Run the frontend checks from `frontend/`:
 
-This makes the investigation process more transparent and easier to audit.
+```powershell
+npm.cmd run lint
+npm.cmd run build
+```
 
-Current Status
-Completed
- FastAPI backend
- Incident API
- Evidence upload
- Event extraction
- Timeline generation
- Gemini integration
- Local event parser fallback
- Local hypothesis engine
- Investigation API
- React dashboard
- Evidence page
- Timeline page
- Investigation page
- Hypothesis confidence visualization
- Evidence correlation
- Investigation relationship graph
- Loading states
- Error states
- Empty states
-Future Improvements
-Persistent database storage
-Authentication and authorization
-Multiple incidents
-Advanced graph visualization
-More sophisticated root-cause scoring
-Observability integrations
-Kubernetes / cloud log ingestion
-Incident collaboration
-Investigation history
-Production deployment
-License
+## Current Limitations
+
+- Incident data is stored in memory and resets when the backend restarts.
+- The current UI focuses on the default incident `INC-001`.
+- Authentication and authorization are not implemented.
+- Evidence files are stored locally in `backend/uploads/`.
+- The Gemini API requires a configured key and available quota.
+
+## License
 
 This project is intended for educational, portfolio, and engineering demonstration purposes.
-
-
-
