@@ -1,0 +1,6 @@
+2026-08-21 10:12:02 INFO Database migration started
+2026-08-21 10:13:17 INFO Database migration completed
+2026-08-21 10:13:49 WARN Database connection latency increased
+2026-08-21 10:14:03 ERROR Database connection timeout
+2026-08-21 10:14:19 ERROR API request failed with 500
+2026-08-21 10:14:31 ERROR Payment service unavailable

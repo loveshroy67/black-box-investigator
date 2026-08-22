@@ -1,0 +1,6 @@
+2026-08-21 11:20:01 INFO Service operating normally
+2026-08-21 11:20:42 WARN Network latency increased
+2026-08-21 11:21:05 ERROR Database connection timeout
+2026-08-21 11:21:19 WARN Packet loss detected
+2026-08-21 11:21:44 ERROR API request timeout
+2026-08-21 11:22:03 INFO Network latency returned to normal
