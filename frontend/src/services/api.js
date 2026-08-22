@@ -2,7 +2,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 async function request(path, options = {}) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
 
   try {
     const response = await fetch(`${API_URL}${path}`, {
